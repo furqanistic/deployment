@@ -128,7 +128,7 @@ ufw allow "Nginx Full"
 #### First configuration
 
 ```
- nano /etc/nginx/sites-available/netflix
+ nano /etc/nginx/sites-available/orion
 ```
 
 ```
@@ -136,7 +136,7 @@ server {
   listen 80;
 
   location / {
-        root /var/www/netflix;
+        root /var/www/orion;
         index  index.html index.htm;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -150,14 +150,14 @@ server {
 ```
 
 ```
-ln -s /etc/nginx/sites-available/netflix /etc/nginx/sites-enabled/netflix
+ln -s /etc/nginx/sites-available/orion /etc/nginx/sites-enabled/orion
 
 ```
 
 ##### Write your fist message
 
 ```
-nano /var/www/netflix/index.html
+nano /var/www/orion/index.html
 
 ```
 
@@ -174,11 +174,11 @@ apt install git
 ```
 
 ```
-mkdir netflix
+mkdir orion
 ```
 
 ```
-cd netflix
+cd orion
 ```
 
 ```
@@ -188,7 +188,7 @@ git clone <your repository>
 ## Nginx Configuration for new apps
 
 ```
-nano /etc/nginx/sites-available/netflix
+nano /etc/nginx/sites-available/orion
 ```
 
 ```
@@ -271,22 +271,22 @@ npm run build
 Right now, we should move this build file into the main web file
 
 ```
-rm -rf /var/www/netflix/*
+rm -rf /var/www/orion/*
 ```
 
 ```
-mkdir /var/www/netflix/client
+mkdir /var/www/orion/client
 ```
 
 ```
-cp -r build/* /var/www/netflix/client
+cp -r build/* /var/www/orion/client
 ```
 
 Let's make some server configuration
 
 ```
  location / {
-        root /var/www/netflix/client/;
+        root /var/www/orion/client/;
         index  index.html index.htm;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -314,7 +314,7 @@ server {
  server_name safakkocaoglu.com www.safakkocaoglu.com;
 
 location / {
- root /var/www/netflix/client;
+ root /var/www/orion/client;
  index  index.html index.htm;
  proxy_http_version 1.1;
  proxy_set_header Upgrade $http_upgrade;
@@ -342,7 +342,7 @@ server {
   listen 80;
   server_name admin.safakkocaoglu.com;
   location / {
-    root /var/www/netflix/admin;
+    root /var/www/orion/admin;
     index  index.html index.htm;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;

@@ -327,7 +327,7 @@ location / {
 
 server {
   listen 80;
-  server_name api.safakkocaoglu.com;
+  server_name api.example.com;
   location / {
     proxy_pass http://45.90.108.107:8800;
     proxy_http_version 1.1;
@@ -340,7 +340,7 @@ server {
 
 server {
   listen 80;
-  server_name admin.safakkocaoglu.com;
+  server_name admin.example.com;
   location / {
     root /var/www/orion/admin;
     index  index.html index.htm;

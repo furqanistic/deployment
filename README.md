@@ -282,6 +282,10 @@ mkdir /var/www/orion/client
 cp -r build/* /var/www/orion/client
 ```
 
+```
+cp -r build/* /var/www/orion/faculty
+```
+
 Let's make some server configuration
 
 ```
@@ -311,7 +315,7 @@ Let's make some server configuration
 ```
 server {
  listen 80;
- server_name safakkocaoglu.com www.safakkocaoglu.com;
+ server_name example.com www.example.com;
 
 location / {
  root /var/www/orion/client;

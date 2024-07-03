@@ -128,7 +128,7 @@ ufw allow "Nginx Full"
 #### First configuration
 
 ```
- nano /etc/nginx/sites-available/orion
+ nano /etc/nginx/sites-available/website
 ```
 
 ```
@@ -136,7 +136,7 @@ server {
   listen 80;
 
   location / {
-        root /var/www/orion;
+        root /var/www/website;
         index  index.html index.htm;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -150,14 +150,14 @@ server {
 ```
 
 ```
-ln -s /etc/nginx/sites-available/orion /etc/nginx/sites-enabled/orion
+ln -s /etc/nginx/sites-available/website /etc/nginx/sites-enabled/website
 
 ```
 
 ##### Write your fist message
 
 ```
-nano /var/www/orion/index.html
+nano /var/www/website/index.html
 
 ```
 
@@ -174,11 +174,11 @@ apt install git
 ```
 
 ```
-mkdir orion
+mkdir website
 ```
 
 ```
-cd orion
+cd website
 ```
 
 ```
@@ -188,7 +188,7 @@ git clone <your repository>
 ## Nginx Configuration for new apps
 
 ```
-nano /etc/nginx/sites-available/orion
+nano /etc/nginx/sites-available/website
 ```
 
 ```
@@ -271,26 +271,26 @@ npm run build
 Right now, we should move this build file into the main web file
 
 ```
-rm -rf /var/www/orion/*
+rm -rf /var/www/website/*
 ```
 
 ```
-mkdir /var/www/orion/client
+mkdir /var/www/website/client
 ```
 
 ```
-cp -r build/* /var/www/orion/client
+cp -r build/* /var/www/website/client
 ```
 
 ```
-cp -r build/* /var/www/orion/faculty
+cp -r build/* /var/www/website/faculty
 ```
 
 Let's make some server configuration
 
 ```
  location / {
-        root /var/www/orion/client/;
+        root /var/www/website/client/;
         index  index.html index.htm;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -318,7 +318,7 @@ server {
  server_name example.com www.example.com;
 
 location / {
- root /var/www/orion/client;
+ root /var/www/website/client;
  index  index.html index.htm;
  proxy_http_version 1.1;
  proxy_set_header Upgrade $http_upgrade;
@@ -346,7 +346,7 @@ server {
   listen 80;
   server_name admin.example.com;
   location / {
-    root /var/www/orion/admin;
+    root /var/www/website/admin;
     index  index.html index.htm;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;

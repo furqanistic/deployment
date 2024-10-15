@@ -283,6 +283,10 @@ cp -r build/* /var/www/website/client
 ```
 
 ```
+cp -r dist/* /var/www/website/client
+```
+
+```
 cp -r build/* /var/www/website/faculty
 ```
 

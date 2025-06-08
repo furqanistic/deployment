@@ -172,6 +172,10 @@ systemctl start nginx
 ```
 systemctl status
 ```
+## If status is degraded then (otherwise leave)
+```
+systemctl reset-failed
+```
 
 ## Uploading Apps Using Git
 

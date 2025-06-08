@@ -287,6 +287,10 @@ rm -rf /var/www/website/*
 ```
 mkdir /var/www/website/client
 ```
+if get parent director error then do this (otherwise leave)
+```
+mkdir -p /var/www/website/client
+```
 
 ```
 cp -r build/* /var/www/website/client

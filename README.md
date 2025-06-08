@@ -151,25 +151,26 @@ server {
 
 ```
 ln -s /etc/nginx/sites-available/website /etc/nginx/sites-enabled/website
-
 ```
 ##### Always check your configuration after server settings
 ```
 nginx -t
-
 ```
 
 ##### Write your fist message
 
 ```
 nano /var/www/website/index.html
-
 ```
 
 ##### Start Nginx and check the page
 
 ```
 systemctl start nginx
+```
+
+```
+systemctl status
 ```
 
 ## Uploading Apps Using Git

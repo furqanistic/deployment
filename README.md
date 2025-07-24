@@ -397,3 +397,53 @@ Let’s Encrypt’s certificates are only valid for ninety days. To set a timer 
 ```
 systemctl status certbot.timer
 ```
+
+# Bonus Tip
+# VPS SSH Key Setup for GitHub (if repo is private then how to ull updates in future)
+
+## Workflow Overview
+**MacBook** → **GitHub** → **VPS (deployment)**
+
+## One-Time Setup Steps
+
+### 1. Generate SSH Key on VPS
+```bash
+ssh-keygen -t ed25519 -C "vps-deployment"
+# Press Enter for defaults
+```
+
+### 2. Get the Public Key
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+### 3. Add to Your GitHub
+- Go to GitHub → Settings → SSH and GPG keys → New SSH key
+- Name it something like "Client VPS - Deployment"
+- Paste the public key content
+
+### 4. Update Remote URL on VPS
+```bash
+git remote set-url origin git@github.com:yourusername/repo-name.git
+```
+
+## Daily Workflow
+
+### On MacBook (Development)
+```bash
+git add .
+git commit -m "update"
+git push origin main
+```
+
+### On VPS (Deployment)
+```bash
+git pull origin main
+```
+
+## Benefits
+- VPS can pull your private repo securely
+- No passwords stored on client's server
+- You can revoke VPS access anytime from GitHub
+- Clean separation between development and deployment
+- VPS only has **read access** to pull your updates

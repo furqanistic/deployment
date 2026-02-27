@@ -398,6 +398,9 @@ Let’s Encrypt’s certificates are only valid for ninety days. To set a timer 
 systemctl status certbot.timer
 ```
 
+# DNS SETTINGS
+<img width="1117" height="305" alt="image" src="https://github.com/user-attachments/assets/5ed40604-3185-41ab-8003-f6ff0bfe32f3" />
+
 # Bonus Tip
 # VPS SSH Key Setup for GitHub (if repo is private then how to ull updates in future)
 

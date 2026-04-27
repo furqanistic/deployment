@@ -251,7 +251,11 @@ Let's create a new pm2 instance
 ```
 pm2 start --name api index.js
 ```
+For supbase it can be
 
+```
+pm2 start src/server.js --name api
+```
 ```
 pm2 startup ubuntu
 ```

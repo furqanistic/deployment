@@ -281,6 +281,13 @@ Let's create the build file
 ```
 npm run build
 ```
+THERE IS A MODERN WAY AS WELL
+```
+npm ci --prefix client
+```
+```
+npm run build --prefix client
+```
 
 Right now, we should move this build file into the main web file
 

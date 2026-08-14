@@ -7,12 +7,18 @@ Server IP: 89.167.30.15
 Domain: example.com
 API: api.example.com
 Backend Port: 8800
-Project: /var/www/website
-Frontend: /var/www/website/client
-Backend: /var/www/website/api
+
+Project:
+/var/www/website
+
+Frontend:
+/var/www/website/client
+
+Backend:
+/var/www/website/api
 ```
 
-Replace them with your own values.
+Replace these with your own values.
 
 ---
 
@@ -24,7 +30,9 @@ ssh root@89.167.30.15
 
 Using an SSH key is recommended.
 
-## Create SSH Key on Mac / Linux / Windows
+## Create SSH Key
+
+Mac / Linux / Windows:
 
 ```bash
 ssh-keygen -t ed25519
@@ -44,7 +52,9 @@ If you already use RSA:
 pbcopy < ~/.ssh/id_rsa.pub
 ```
 
-Add this public key to your VPS provider, then connect:
+Add this public key to your VPS provider.
+
+Then connect:
 
 ```bash
 ssh root@89.167.30.15
@@ -101,17 +111,21 @@ Check:
 systemctl status nginx
 ```
 
+Press `q` to exit.
+
 ---
 
 # 5. Setup Firewall
 
-Install:
+Install UFW:
 
 ```bash
 apt install ufw -y
 ```
 
-**Allow SSH before enabling UFW:**
+## Important — Allow SSH First
+
+Do this **before enabling UFW**:
 
 ```bash
 ufw allow OpenSSH
@@ -123,7 +137,7 @@ Allow Nginx:
 ufw allow "Nginx Full"
 ```
 
-Enable:
+Enable firewall:
 
 ```bash
 ufw enable
@@ -133,6 +147,13 @@ Check:
 
 ```bash
 ufw status
+```
+
+You should see something like:
+
+```text
+OpenSSH       ALLOW
+Nginx Full    ALLOW
 ```
 
 ---
@@ -149,15 +170,15 @@ rm -f /etc/nginx/sites-available/default
 
 ---
 
-# 7. Test Nginx With a Temporary Website
+# 7. Test Nginx With Temporary Website
 
-Create folder:
+Create:
 
 ```bash
 mkdir -p /var/www/website
 ```
 
-Create config:
+Create Nginx config:
 
 ```bash
 nano /etc/nginx/sites-available/website
@@ -191,7 +212,7 @@ Here:
 server_name _;
 ```
 
-means we can access the website using the VPS IP.
+allows you to test using the VPS IP.
 
 Example:
 
@@ -237,13 +258,13 @@ Visit:
 http://89.167.30.15
 ```
 
-If you see the message, Nginx is working.
+If you see the message, Nginx is working correctly.
 
 ---
 
 # 9. Delete Temporary Website
 
-**Important:** this folder was only created for testing.
+The `/var/www/website` folder was only created for testing.
 
 Delete it before cloning your real project:
 
@@ -279,17 +300,32 @@ git --version
 
 ### Skip this section if your repository is public.
 
-If your GitHub repo is **private**, you need to give the VPS access **before cloning it**.
+If your repository is **private**, configure GitHub SSH access before cloning it.
 
-Generate an SSH key on the VPS:
+## Generate SSH Key on VPS
+
+Run on the VPS:
 
 ```bash
 ssh-keygen -t ed25519 -C "vps-deployment"
 ```
 
-Press `ENTER` for the defaults.
+Press `ENTER` for all defaults.
 
-Get the public key:
+This normally creates:
+
+```text
+/root/.ssh/id_ed25519
+/root/.ssh/id_ed25519.pub
+```
+
+The first is your private key.
+
+The `.pub` file is the public key that you give to GitHub.
+
+---
+
+## Copy VPS Public Key
 
 ```bash
 cat ~/.ssh/id_ed25519.pub
@@ -297,39 +333,147 @@ cat ~/.ssh/id_ed25519.pub
 
 Copy the complete output.
 
-Go to:
+Example:
+
+```text
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... vps-deployment
+```
+
+---
+
+## Add Key to GitHub
+
+Open your private repository:
 
 ```text
 GitHub
-→ Your Repository
+→ Repository
 → Settings
 → Deploy Keys
 → Add Deploy Key
 ```
 
-Name it:
+Example title:
 
 ```text
 Production VPS
 ```
 
-Paste the SSH public key.
+Paste the public key.
 
-If the VPS only needs to pull code, **do not enable write access**.
+If the VPS only needs to pull code, **do not enable Allow write access**.
 
-Test:
+---
+
+## Test GitHub SSH Connection
+
+Run:
 
 ```bash
 ssh -T git@github.com
 ```
 
-The first time, enter:
+The first time GitHub may ask:
+
+```text
+Are you sure you want to continue connecting?
+```
+
+Enter:
 
 ```text
 yes
 ```
 
-Now the VPS can access your private repository.
+Your VPS can now access the private repository.
+
+---
+
+## GitHub SSH Repository URL
+
+Your repository SSH URL looks like:
+
+```text
+git@github.com:USERNAME/REPOSITORY.git
+```
+
+Example:
+
+```text
+git@github.com:furqanistic/project-manara-AI.git
+```
+
+You can find it from:
+
+```text
+GitHub Repository
+→ Code
+→ SSH
+```
+
+---
+
+## If Repository Is Already Cloned Using HTTPS
+
+Go inside the project:
+
+```bash
+cd /var/www/website
+```
+
+Check the current remote:
+
+```bash
+git remote -v
+```
+
+You may see:
+
+```text
+origin  https://github.com/furqanistic/project-manara-AI.git
+```
+
+Change it to SSH:
+
+```bash
+git remote set-url origin git@github.com:furqanistic/project-manara-AI.git
+```
+
+Check again:
+
+```bash
+git remote -v
+```
+
+Now you should see:
+
+```text
+origin  git@github.com:furqanistic/project-manara-AI.git
+```
+
+Now future commands like:
+
+```bash
+git pull origin main
+```
+
+will use your SSH key.
+
+### Important
+
+If you clone the repository using its SSH URL from the beginning:
+
+```bash
+git clone git@github.com:furqanistic/project-manara-AI.git website
+```
+
+you **do not need** to run:
+
+```bash
+git remote set-url origin ...
+```
+
+because Git automatically sets the SSH remote correctly.
 
 ---
 
@@ -341,7 +485,7 @@ Go to:
 cd /var/www
 ```
 
-## Public GitHub Repository
+## Public Repository
 
 You can use HTTPS:
 
@@ -355,7 +499,9 @@ Example:
 git clone https://github.com/furqanistic/project-manara-AI.git website
 ```
 
-## Private GitHub Repository
+---
+
+## Private Repository
 
 **First complete Step 11 — GitHub SSH Setup.**
 
@@ -389,23 +535,37 @@ Check:
 ls
 ```
 
+Check Git remote:
+
+```bash
+git remote -v
+```
+
+For a private repository, it should look like:
+
+```text
+origin  git@github.com:furqanistic/project-manara-AI.git
+```
+
 ---
 
 # 13. Install Latest Stable Node.js LTS
 
-Do not use:
+Do not simply use:
 
 ```bash
 apt install nodejs
 ```
 
-because Ubuntu may provide an older version.
+because Ubuntu may install an older version.
 
-Install NVM:
+Install `curl`:
 
 ```bash
 apt install curl -y
 ```
+
+Install NVM:
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
@@ -423,13 +583,13 @@ Check:
 nvm --version
 ```
 
-Install the **latest stable Node.js LTS**:
+Install the latest stable Node.js LTS:
 
 ```bash
 nvm install --lts
 ```
 
-Make it default:
+Set it as default:
 
 ```bash
 nvm alias default 'lts/*'
@@ -445,16 +605,19 @@ Verify:
 
 ```bash
 node -v
+```
+
+```bash
 npm -v
 ```
 
-npm is already included, so you do **not** need:
+npm comes with Node.js, so you do not need:
 
 ```bash
 apt install npm
 ```
 
-### Update Node Later
+## Update Node Later
 
 ```bash
 nvm install --lts
@@ -466,19 +629,25 @@ nvm alias default 'lts/*'
 
 # 14. Setup Backend
 
-Example:
+Example backend:
+
+```text
+/var/www/website/api
+```
+
+Go there:
 
 ```bash
 cd /var/www/website/api
 ```
 
-Install packages:
+If you have `package-lock.json`:
 
 ```bash
 npm ci
 ```
 
-If there is no `package-lock.json`:
+Otherwise:
 
 ```bash
 npm install
@@ -499,13 +668,19 @@ DATABASE_URL=your_database_url
 JWT_SECRET=your_secret
 ```
 
-Test API:
+Test your API:
 
 ```bash
 node index.js
 ```
 
-Or if your entry file is different:
+Or if your entry file is:
+
+```text
+src/server.js
+```
+
+run:
 
 ```bash
 node src/server.js
@@ -517,7 +692,7 @@ Test:
 curl http://127.0.0.1:8800
 ```
 
-Stop it:
+Stop the manual process:
 
 ```text
 CTRL + C
@@ -527,11 +702,13 @@ CTRL + C
 
 # 15. Install PM2
 
+Install:
+
 ```bash
 npm install -g pm2
 ```
 
-For:
+If your entry file is:
 
 ```text
 index.js
@@ -543,7 +720,7 @@ run:
 pm2 start index.js --name api
 ```
 
-For:
+If it is:
 
 ```text
 src/server.js
@@ -561,15 +738,23 @@ Check:
 pm2 status
 ```
 
+Logs:
+
+```bash
+pm2 logs api
+```
+
 ---
 
 # 16. Start PM2 After VPS Reboot
+
+Run:
 
 ```bash
 pm2 startup
 ```
 
-PM2 will give you a command.
+PM2 will give you another command.
 
 **Copy and run the exact command PM2 gives you.**
 
@@ -591,7 +776,7 @@ pm2 logs api
 
 # 17. Setup Vite Frontend
 
-Go to frontend:
+Go to:
 
 ```bash
 cd /var/www/website/client
@@ -609,13 +794,13 @@ Example:
 VITE_API_URL=https://api.example.com
 ```
 
-Install:
+Install dependencies:
 
 ```bash
 npm ci
 ```
 
-If there is no lock file:
+If there is no `package-lock.json`:
 
 ```bash
 npm install
@@ -627,7 +812,7 @@ Build:
 npm run build
 ```
 
-Vite creates:
+Vite normally creates:
 
 ```text
 /var/www/website/client/dist
@@ -639,13 +824,13 @@ This is the folder Nginx will serve.
 
 # 18. Add DNS Records
 
-Example VPS IP:
+Example server IP:
 
 ```text
 89.167.30.15
 ```
 
-Add:
+Main domain:
 
 ```text
 Type: A
@@ -653,7 +838,7 @@ Name: @
 Value: 89.167.30.15
 ```
 
-For WWW:
+WWW:
 
 ```text
 Type: A
@@ -661,7 +846,7 @@ Name: www
 Value: 89.167.30.15
 ```
 
-For API:
+API:
 
 ```text
 Type: A
@@ -728,23 +913,31 @@ server {
 Example:
 
 ```text
-example.com        → Your Vite frontend
-api.example.com    → Your Node.js API
+example.com      → Vite frontend
+api.example.com  → Node.js API
 ```
 
-And:
+This:
+
+```nginx
+root /var/www/website/client/dist;
+```
+
+serves your Vite build.
+
+This:
 
 ```nginx
 proxy_pass http://127.0.0.1:8800;
 ```
 
-means Nginx sends API requests to your Node.js app running on port `8800`.
+sends API traffic to your Node.js application running on port `8800`.
 
 ---
 
 # 20. Optional Upload Limit
 
-If your API accepts large files, add inside the API `server` block:
+If your API accepts large uploads, add:
 
 ```nginx
 client_max_body_size 1G;
@@ -775,7 +968,7 @@ server {
 
 # 21. Test Nginx
 
-Always run after changing Nginx:
+Always run:
 
 ```bash
 nginx -t
@@ -803,13 +996,13 @@ Install Certbot:
 apt install certbot python3-certbot-nginx -y
 ```
 
-For main website:
+Main website:
 
 ```bash
 certbot --nginx -d example.com -d www.example.com
 ```
 
-For API:
+API:
 
 ```bash
 certbot --nginx -d api.example.com
@@ -821,7 +1014,7 @@ Or together:
 certbot --nginx -d example.com -d www.example.com -d api.example.com
 ```
 
-Only run this after your DNS records point to the VPS.
+Only run Certbot after your DNS records point to the VPS.
 
 Test automatic renewal:
 
@@ -848,7 +1041,7 @@ cd /var/www/website
 git pull origin main
 ```
 
-### Backend Changed
+## Backend Changed
 
 ```bash
 cd api
@@ -856,7 +1049,7 @@ npm ci
 pm2 restart api
 ```
 
-### Frontend Changed
+## Frontend Changed
 
 ```bash
 cd ../client
@@ -864,7 +1057,7 @@ npm ci
 npm run build
 ```
 
-That's it.
+Done.
 
 ---
 
@@ -894,19 +1087,19 @@ Nginx errors:
 tail -f /var/log/nginx/error.log
 ```
 
-Check RAM:
+RAM:
 
 ```bash
 free -h
 ```
 
-Check disk:
+Disk:
 
 ```bash
 df -h
 ```
 
-Check firewall:
+Firewall:
 
 ```bash
 ufw status
@@ -935,15 +1128,23 @@ Create temporary test website
 ↓
 Test VPS IP
 ↓
-DELETE temporary /var/www/website
+DELETE /var/www/website
 ↓
 Install Git
 ↓
-Private repo? → Setup GitHub SSH first
+Private repo?
+→ Generate SSH key on VPS
+→ Add Deploy Key to GitHub
+→ Test GitHub SSH
+→ Use SSH repository URL
 ↓
 Clone repo into /var/www/website
 ↓
-Install NVM + latest Node LTS
+Verify git remote -v
+↓
+Install NVM
+↓
+Install latest Node.js LTS
 ↓
 Setup backend
 ↓

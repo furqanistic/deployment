@@ -1,6 +1,6 @@
 # VPS Deployment Guide
 
-Example values used in this guide:
+Example values:
 
 ```text
 Server IP: 89.167.30.15
@@ -8,14 +8,9 @@ Domain: example.com
 API: api.example.com
 Backend Port: 8800
 
-Project:
-/var/www/website
-
-Frontend:
-/var/www/website/client
-
-Backend:
-/var/www/website/api
+Project: /var/www/website
+Frontend: /var/www/website/client
+Backend: /var/www/website/api
 ```
 
 Replace these with your own values.
@@ -52,7 +47,7 @@ If you already use RSA:
 pbcopy < ~/.ssh/id_rsa.pub
 ```
 
-Add this public key to your VPS provider.
+Add the public key to your VPS provider.
 
 Then connect:
 
@@ -125,7 +120,7 @@ apt install ufw -y
 
 ## Important — Allow SSH First
 
-Do this before enabling UFW:
+Do this **before enabling UFW**:
 
 ```bash
 ufw allow OpenSSH
@@ -158,7 +153,9 @@ Nginx Full    ALLOW
 
 ---
 
-# 6. Remove Default Nginx Config
+# 6. Remove Default Nginx Config & Folder
+
+Remove the default Nginx configuration:
 
 ```bash
 rm -f /etc/nginx/sites-enabled/default
@@ -168,11 +165,39 @@ rm -f /etc/nginx/sites-enabled/default
 rm -f /etc/nginx/sites-available/default
 ```
 
+When Nginx is installed, it normally creates this default website folder:
+
+```text
+/var/www/html
+```
+
+We are going to use:
+
+```text
+/var/www/website
+```
+
+instead, so the default `html` folder is not needed.
+
+Delete it:
+
+```bash
+rm -rf /var/www/html
+```
+
+Check:
+
+```bash
+ls /var/www
+```
+
+At this point `/var/www` should normally be empty.
+
 ---
 
 # 7. Test Nginx With Temporary Website
 
-Create the temporary website folder:
+Create a temporary website folder:
 
 ```bash
 mkdir -p /var/www/website
@@ -242,8 +267,6 @@ systemctl reload nginx
 
 # 8. Create Test HTML Page
 
-Create:
-
 ```bash
 nano /var/www/website/index.html
 ```
@@ -266,15 +289,15 @@ If you see the message, Nginx is working.
 
 # 9. Delete Temporary Website
 
-The HTML page and `/var/www/website` folder were only created for testing.
+The HTML file and `/var/www/website` folder were only created for testing.
 
-First delete the temporary HTML:
+Delete the temporary HTML:
 
 ```bash
 rm -f /var/www/website/index.html
 ```
 
-Then delete the temporary website folder:
+Then delete the temporary folder:
 
 ```bash
 rm -rf /var/www/website
@@ -286,11 +309,7 @@ Check:
 ls /var/www
 ```
 
-You should no longer see:
-
-```text
-website
-```
+At this point it should normally show nothing.
 
 Now `/var/www/website` is free for your real project.
 
@@ -314,7 +333,7 @@ git --version
 
 ### Skip this section if your repository is public.
 
-For a private repository, setup GitHub SSH access **before cloning**.
+If your repository is private, set up GitHub SSH access **before cloning**.
 
 ## Generate SSH Key on VPS
 
@@ -331,8 +350,6 @@ This creates:
 /root/.ssh/id_ed25519.pub
 ```
 
----
-
 ## Copy Public Key
 
 ```bash
@@ -346,8 +363,6 @@ Example:
 ```text
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... vps-deployment
 ```
-
----
 
 ## Add Key to GitHub
 
@@ -369,15 +384,7 @@ Production VPS
 
 Paste the public key.
 
-If the VPS only needs to pull code, leave:
-
-```text
-Allow write access
-```
-
-disabled.
-
----
+If the VPS only needs to pull code, leave **Allow write access** disabled.
 
 ## Test GitHub SSH
 
@@ -390,8 +397,6 @@ The first time, enter:
 ```text
 yes
 ```
-
----
 
 ## Get SSH Repository URL
 
@@ -415,8 +420,6 @@ Example:
 git@github.com:johndoe/my-app.git
 ```
 
----
-
 ## If Repository Was Already Cloned Using HTTPS
 
 Go to the project:
@@ -425,19 +428,19 @@ Go to the project:
 cd /var/www/website
 ```
 
-Check remote:
+Check:
 
 ```bash
 git remote -v
 ```
 
-Example HTTPS remote:
+Example:
 
 ```text
 origin  https://github.com/johndoe/my-app.git
 ```
 
-Change it to SSH:
+Change it:
 
 ```bash
 git remote set-url origin git@github.com:johndoe/my-app.git
@@ -455,7 +458,7 @@ You should now see:
 origin  git@github.com:johndoe/my-app.git
 ```
 
-If you clone using SSH from the beginning, you do **not** need to change the remote manually.
+If you clone using SSH from the beginning, you do **not** need to change the remote.
 
 ---
 
@@ -507,7 +510,7 @@ Go inside:
 cd /var/www/website
 ```
 
-Check files:
+Check:
 
 ```bash
 ls
@@ -517,12 +520,6 @@ Check remote:
 
 ```bash
 git remote -v
-```
-
-For a private repository, it should look similar to:
-
-```text
-origin  git@github.com:johndoe/my-app.git
 ```
 
 ---
@@ -561,7 +558,7 @@ Check:
 nvm --version
 ```
 
-Install latest stable LTS:
+Install the latest stable LTS:
 
 ```bash
 nvm install --lts
@@ -586,11 +583,7 @@ node -v
 npm -v
 ```
 
-npm comes with Node.js, so you do not need:
-
-```bash
-apt install npm
-```
+npm comes with Node.js.
 
 ## Update Node Later
 
@@ -600,18 +593,11 @@ nvm use --lts
 nvm alias default 'lts/*'
 ```
 
-Check:
-
-```bash
-node -v
-npm -v
-```
-
 ---
 
 # 14. Setup Backend
 
-Example backend folder:
+Example:
 
 ```text
 /var/www/website/api
@@ -656,13 +642,7 @@ Test API:
 node index.js
 ```
 
-If your entry file is:
-
-```text
-src/server.js
-```
-
-use:
+Or:
 
 ```bash
 node src/server.js
@@ -674,7 +654,7 @@ Test:
 curl http://127.0.0.1:8800
 ```
 
-Stop the manual process:
+Stop it:
 
 ```text
 CTRL + C
@@ -688,25 +668,13 @@ CTRL + C
 npm install -g pm2
 ```
 
-If your entry file is:
-
-```text
-index.js
-```
-
-run:
+For `index.js`:
 
 ```bash
 pm2 start index.js --name api
 ```
 
-If your entry file is:
-
-```text
-src/server.js
-```
-
-run:
+For `src/server.js`:
 
 ```bash
 pm2 start src/server.js --name api
@@ -728,8 +696,6 @@ pm2 logs api
 
 # 16. Start PM2 After VPS Reboot
 
-Run:
-
 ```bash
 pm2 startup
 ```
@@ -744,7 +710,7 @@ Then:
 pm2 save
 ```
 
-Useful commands:
+Useful:
 
 ```bash
 pm2 status
@@ -774,7 +740,7 @@ Example:
 VITE_API_URL=https://api.example.com
 ```
 
-Install dependencies:
+Install:
 
 ```bash
 npm ci
@@ -792,13 +758,11 @@ Build:
 npm run build
 ```
 
-Vite creates:
+Vite normally creates:
 
 ```text
 /var/www/website/client/dist
 ```
-
-This is the folder Nginx will serve.
 
 ---
 
@@ -832,14 +796,6 @@ API:
 Type: A
 Name: api
 Value: 89.167.30.15
-```
-
-This gives:
-
-```text
-example.com
-www.example.com
-api.example.com
 ```
 
 ---
@@ -897,22 +853,6 @@ example.com      → Vite frontend
 api.example.com  → Node.js API
 ```
 
-This:
-
-```nginx
-root /var/www/website/client/dist;
-```
-
-serves your Vite build.
-
-This:
-
-```nginx
-proxy_pass http://127.0.0.1:8800;
-```
-
-sends API requests to Node.js running on port `8800`.
-
 ---
 
 # 20. Optional Upload Limit
@@ -948,8 +888,6 @@ server {
 
 # 21. Test Nginx
 
-Always run:
-
 ```bash
 nginx -t
 ```
@@ -976,7 +914,7 @@ Install Certbot:
 apt install certbot python3-certbot-nginx -y
 ```
 
-Main website:
+Website:
 
 ```bash
 certbot --nginx -d example.com -d www.example.com
@@ -994,7 +932,7 @@ Or together:
 certbot --nginx -d example.com -d www.example.com -d api.example.com
 ```
 
-Only run Certbot after your DNS records point to the VPS.
+Only run Certbot after DNS points to the VPS.
 
 Test renewal:
 
@@ -1021,7 +959,7 @@ cd /var/www/website
 git pull origin main
 ```
 
-## Backend Changed
+### Backend Changed
 
 ```bash
 cd api
@@ -1029,7 +967,7 @@ npm ci
 pm2 restart api
 ```
 
-## Frontend Changed
+### Frontend Changed
 
 ```bash
 cd ../client
@@ -1043,49 +981,33 @@ Done.
 
 # Useful Commands
 
-Check API:
-
 ```bash
 pm2 status
 ```
-
-API logs:
 
 ```bash
 pm2 logs api
 ```
 
-Check Nginx:
-
 ```bash
 nginx -t
 ```
-
-Nginx errors:
 
 ```bash
 tail -f /var/log/nginx/error.log
 ```
 
-RAM:
-
 ```bash
 free -h
 ```
-
-Disk:
 
 ```bash
 df -h
 ```
 
-Firewall:
-
 ```bash
 ufw status
 ```
-
-Restart VPS:
 
 ```bash
 reboot
@@ -1103,6 +1025,10 @@ Update Ubuntu
 Install Nginx
 ↓
 Configure Firewall
+↓
+Remove default Nginx config
+↓
+DELETE /var/www/html
 ↓
 Create temporary /var/www/website
 ↓

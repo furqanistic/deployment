@@ -1,52 +1,59 @@
-# VPS Setup & Deployment Guide
+# Complete VPS Setup & Deployment Guide
 
 This guide covers:
 
-* SSH connection
-* Ubuntu server setup
+* Connecting to a VPS with SSH
+* Creating SSH keys
+* Initial Ubuntu configuration
 * Nginx
-* Firewall
-* Git/GitHub
-* Latest stable Node.js LTS
-* Node.js API
+* UFW Firewall
+* Testing the server
+* Git & GitHub
+* Installing the latest stable Node.js LTS
+* Node.js API deployment
 * PM2
-* React/Vite deployment
-* Domain setup
-* SSL
-* Private GitHub repositories
+* React + Vite deployment
+* Domain configuration
+* SSL with Certbot
+* Private GitHub repository setup
+* Updating your application later
 
 ---
 
 # Example Values Used in This Guide
 
-Throughout this guide, I will use these example values:
+To make everything easier to understand, these example values will be used:
 
 ```text
-Server IP: 89.167.30.15
+Server IP:
+89.167.30.15
 
 Main Domain:
 example.com
 
-WWW:
+WWW Domain:
 www.example.com
 
 API Domain:
 api.example.com
 
+Admin Domain (optional):
+admin.example.com
+
 Backend Port:
 8800
 
-Project Directory:
+Project Folder:
 /var/www/website
 
-Frontend:
+Frontend Folder:
 /var/www/website/client
 
-Backend:
+Backend Folder:
 /var/www/website/api
 ```
 
-Replace these example values with your own.
+Replace these examples with your actual values.
 
 For example:
 
@@ -62,43 +69,80 @@ ssh root@YOUR_SERVER_IP
 
 ---
 
-# 1. Connect to the VPS
+# 1. Connecting to the VPS
 
-The recommended way to connect to your server is using an SSH key.
-
-## Create an SSH Key
-
-### macOS / Linux / Windows 10+
-
-```bash
-ssh-keygen -t ed25519 -C "my-macbook"
-```
-
-Press `ENTER` to use the default location.
+You can connect to your VPS using the root password.
 
 Example:
+
+```bash
+ssh root@89.167.30.15
+```
+
+However, using an **SSH key** is more secure and recommended.
+
+---
+
+# 2. Creating an SSH Key
+
+## macOS / Linux / Windows 10+
+
+Open Terminal or PowerShell.
+
+Run:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+Press `ENTER` to save the key in the default location.
+
+Example on macOS:
 
 ```text
 /Users/furqan/.ssh/id_ed25519
 ```
+
+You can enter a passphrase or press `ENTER` to leave it empty.
 
 This creates:
 
 ```text
 Private Key:
-/Users/furqan/.ssh/id_ed25519
+~/.ssh/id_ed25519
 
 Public Key:
-/Users/furqan/.ssh/id_ed25519.pub
+~/.ssh/id_ed25519.pub
 ```
 
 ---
 
-## Copy SSH Key on macOS
+## If You Already Use RSA
+
+You can also use:
+
+```bash
+ssh-keygen -t rsa -b 4096
+```
+
+This creates:
+
+```text
+~/.ssh/id_rsa
+~/.ssh/id_rsa.pub
+```
+
+---
+
+# 3. Copy Your SSH Public Key
+
+## macOS — ED25519
 
 ```bash
 pbcopy < ~/.ssh/id_ed25519.pub
 ```
+
+## macOS — RSA
 
 If you already use RSA:
 
@@ -106,15 +150,13 @@ If you already use RSA:
 pbcopy < ~/.ssh/id_rsa.pub
 ```
 
----
-
 ## Linux
 
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
----
+Copy the output.
 
 ## Windows PowerShell
 
@@ -126,16 +168,20 @@ Copy the output.
 
 ---
 
-# 2. Add SSH Key to VPS Provider
+# 4. Add SSH Key to Your VPS
 
-Go to your hosting provider:
+Go to your hosting provider dashboard.
 
-* Hetzner
-* Linode
-* DigitalOcean
-* Vultr
+For example:
 
-Add the public SSH key.
+```text
+Hetzner
+Linode
+DigitalOcean
+Vultr
+```
+
+Add your **public SSH key**.
 
 Then connect:
 
@@ -149,13 +195,13 @@ Example:
 ssh root@89.167.30.15
 ```
 
-If you want to explicitly use a specific SSH key:
+If you specifically want to use your ED25519 key:
 
 ```bash
 ssh -i ~/.ssh/id_ed25519 root@89.167.30.15
 ```
 
-For RSA:
+If using RSA:
 
 ```bash
 ssh -i ~/.ssh/id_rsa root@89.167.30.15
@@ -163,46 +209,59 @@ ssh -i ~/.ssh/id_rsa root@89.167.30.15
 
 ---
 
-# 3. Update the Server
+# 5. First Server Configuration
+
+Once connected to your VPS, update the server.
 
 ```bash
-apt update && apt full-upgrade -y
+apt update && apt dist-upgrade -y
 ```
 
-Clean unnecessary packages:
+Clean unused packages:
 
 ```bash
 apt autoremove -y
+```
+
+```bash
 apt clean
 ```
 
 ---
 
-# 4. Remove Apache
+# 6. Remove Apache
 
-Only do this if Apache is installed.
+If Apache is installed and you want to use Nginx, remove it.
+
+Stop Apache:
 
 ```bash
 systemctl stop apache2
 ```
 
+Disable Apache:
+
 ```bash
 systemctl disable apache2
 ```
 
+Remove Apache:
+
 ```bash
-apt purge apache2 apache2-utils apache2-bin -y
+apt remove apache2 -y
 ```
+
+Delete unnecessary dependencies:
 
 ```bash
 apt autoremove -y
 ```
 
-If Apache is not installed, skip this step.
+If Apache is not installed, skip this section.
 
 ---
 
-# 5. Install Nginx
+# 7. Install Nginx
 
 ```bash
 apt install nginx -y
@@ -220,7 +279,7 @@ Start Nginx:
 systemctl start nginx
 ```
 
-Check:
+Check Nginx:
 
 ```bash
 systemctl status nginx
@@ -236,7 +295,7 @@ to exit.
 
 ---
 
-# 6. Install Firewall
+# 8. Install and Configure Firewall
 
 Install UFW:
 
@@ -244,13 +303,15 @@ Install UFW:
 apt install ufw -y
 ```
 
-## IMPORTANT
+## IMPORTANT — Allow SSH First
 
-Allow SSH **before** enabling UFW.
+Before enabling UFW, allow SSH:
 
 ```bash
 ufw allow OpenSSH
 ```
+
+Otherwise, you could lock yourself out of your VPS.
 
 Allow Nginx:
 
@@ -258,7 +319,7 @@ Allow Nginx:
 ufw allow "Nginx Full"
 ```
 
-Enable firewall:
+Now enable UFW:
 
 ```bash
 ufw enable
@@ -270,20 +331,24 @@ Check:
 ufw status
 ```
 
-Example output:
+Example:
 
 ```text
-OpenSSH       ALLOW
-Nginx Full    ALLOW
+OpenSSH                    ALLOW
+Nginx Full                 ALLOW
 ```
 
 ---
 
-# 7. Remove Default Nginx Website
+# 9. Delete Default Nginx Configuration
+
+Delete the default enabled configuration:
 
 ```bash
 rm -f /etc/nginx/sites-enabled/default
 ```
+
+Delete the default available configuration:
 
 ```bash
 rm -f /etc/nginx/sites-available/default
@@ -291,71 +356,45 @@ rm -f /etc/nginx/sites-available/default
 
 ---
 
-# 8. Create Website Directory
+# 10. Create a Temporary Test Website
+
+Before deploying your real application, we will test whether Nginx is working.
+
+Create the website directory:
 
 ```bash
 mkdir -p /var/www/website
 ```
 
-Example structure:
-
-```text
-/var/www/website/
-```
-
-Later it may look like:
-
-```text
-/var/www/website/
-├── api/
-└── client/
-```
-
----
-
-# 9. Create First Nginx Configuration
-
-Open:
+Create the Nginx configuration:
 
 ```bash
 nano /etc/nginx/sites-available/website
 ```
 
-For now, we are creating a simple configuration that works directly with the server IP.
-
-Example:
+Add:
 
 ```nginx
 server {
     listen 80;
-
-    # This means accept requests coming to this server
-    # even before we connect a domain.
     server_name _;
 
-    # Example:
-    # Our files are stored inside /var/www/website
-    root /var/www/website;
-
-    index index.html;
-
     location / {
+        root /var/www/website;
+        index index.html index.htm;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+
         try_files $uri $uri/ /index.html;
     }
 }
 ```
 
-### What this means
-
-```nginx
-listen 80;
-```
-
-means:
-
-```text
-Listen for normal HTTP traffic.
-```
+### What does this mean?
 
 This:
 
@@ -363,12 +402,11 @@ This:
 server_name _;
 ```
 
-means:
-
-```text
-Accept requests even if we are accessing the server using its IP.
+allows us to access the website using the server IP before connecting a domain.
 
 Example:
+
+```text
 http://89.167.30.15
 ```
 
@@ -392,26 +430,28 @@ For example:
 
 ---
 
-# 10. Enable Nginx Configuration
+# 11. Enable the Nginx Configuration
+
+Run:
 
 ```bash
-ln -sf /etc/nginx/sites-available/website /etc/nginx/sites-enabled/website
+ln -s /etc/nginx/sites-available/website /etc/nginx/sites-enabled/website
 ```
 
-Always test configuration:
+Always test your Nginx configuration:
 
 ```bash
 nginx -t
 ```
 
-Expected:
+You should see something similar to:
 
 ```text
 syntax is ok
 test is successful
 ```
 
-Then reload:
+Reload Nginx:
 
 ```bash
 systemctl reload nginx
@@ -419,7 +459,7 @@ systemctl reload nginx
 
 ---
 
-# 11. Create Test Website
+# 12. Create the Test Page
 
 Create:
 
@@ -432,6 +472,8 @@ Add:
 ```html
 <h1>My VPS is working!</h1>
 ```
+
+Save the file.
 
 Now visit your server IP.
 
@@ -447,9 +489,60 @@ You should see:
 My VPS is working!
 ```
 
+This confirms:
+
+```text
+VPS ✅
+Nginx ✅
+Firewall ✅
+Server IP ✅
+```
+
 ---
 
-# 12. Install Git
+# 13. IMPORTANT — Delete the Temporary Test Website
+
+The `/var/www/website` directory was only created to test Nginx.
+
+We now need to delete it before cloning our real project.
+
+Run:
+
+```bash
+rm -rf /var/www/website
+```
+
+Check:
+
+```bash
+ls /var/www
+```
+
+You should no longer see:
+
+```text
+website
+```
+
+This step is important.
+
+Otherwise, this command:
+
+```bash
+git clone https://github.com/yourusername/project.git website
+```
+
+would fail because:
+
+```text
+/var/www/website
+```
+
+already exists.
+
+---
+
+# 14. Install Git
 
 ```bash
 apt install git -y
@@ -463,7 +556,7 @@ git --version
 
 ---
 
-# 13. Clone Your Project
+# 15. Clone Your Application
 
 Go to:
 
@@ -471,21 +564,33 @@ Go to:
 cd /var/www
 ```
 
-Clone your repository.
+Now clone your repository.
 
 Example:
 
 ```bash
-git clone https://github.com/yourusername/my-project.git website
+git clone https://github.com/yourusername/project.git website
 ```
 
-This means Git will clone the project into:
+Real-looking example:
+
+```bash
+git clone https://github.com/furqanistic/project-manara-AI.git website
+```
+
+This:
+
+```text
+website
+```
+
+at the end means Git will create:
 
 ```text
 /var/www/website
 ```
 
-So your structure could become:
+So after cloning, your structure might look like:
 
 ```text
 /var/www/website/
@@ -501,47 +606,99 @@ Go inside:
 cd /var/www/website
 ```
 
+Check:
+
+```bash
+ls
+```
+
 ---
 
-# 14. Install Latest Stable Node.js LTS
+# If Your Repository Is Private
 
-Do **not** simply use:
+If the GitHub repository is private, HTTPS cloning may require authentication.
+
+In that case, follow the **Private GitHub Repository Setup** section later in this guide and clone using SSH.
+
+Example:
+
+```bash
+git clone git@github.com:yourusername/project.git website
+```
+
+Example:
+
+```bash
+git clone git@github.com:furqanistic/project-manara-AI.git website
+```
+
+---
+
+# 16. Install Latest Stable Node.js LTS
+
+For a production VPS, we want the latest stable **LTS** version of Node.js.
+
+Instead of:
 
 ```bash
 apt install nodejs
 ```
 
-because Ubuntu may provide an older version.
+we will use NVM.
 
-We will use NVM so we can install the **latest stable LTS version of Node.js**.
+This makes it easier to install and update Node.js.
+
+Node recommends production applications use an LTS release, and NVM supports installing the latest LTS automatically.
+
+---
+
+## Install curl
+
+```bash
+apt install curl -y
+```
+
+---
 
 ## Install NVM
 
 ```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
 ```
 
-Reload terminal:
+The official NVM documentation currently provides this installer version.
+
+Reload your shell:
 
 ```bash
 source ~/.bashrc
 ```
 
-Check:
+Check NVM:
 
 ```bash
-nvm --version
+command -v nvm
+```
+
+You should see:
+
+```text
+nvm
 ```
 
 ---
 
-## Install Latest Stable LTS
+# 17. Install Latest Node.js LTS
+
+Run:
 
 ```bash
 nvm install --lts
 ```
 
-Make it the default version:
+This automatically installs the newest available LTS version rather than hard-coding an old Node version.
+
+Set LTS as the default:
 
 ```bash
 nvm alias default 'lts/*'
@@ -553,13 +710,13 @@ Use it:
 nvm use --lts
 ```
 
-Check Node.js:
+Now check Node:
 
 ```bash
 node -v
 ```
 
-Example output:
+Example:
 
 ```text
 v24.x.x
@@ -571,25 +728,19 @@ Check npm:
 npm -v
 ```
 
-Example:
-
-```text
-11.x.x
-```
-
 You do **not** need:
 
 ```bash
 apt install npm
 ```
 
-because npm is already installed with Node.js.
+because npm comes with Node.js installed through NVM.
 
 ---
 
-# 15. Update Node.js to Latest LTS Later
+# 18. Update Node.js Later
 
-In the future, run:
+Whenever you want to move to the newest LTS:
 
 ```bash
 nvm install --lts
@@ -601,24 +752,27 @@ Then:
 nvm use --lts
 ```
 
-Then:
+Set it as default:
 
 ```bash
 nvm alias default 'lts/*'
 ```
 
-Verify:
+Check:
 
 ```bash
 node -v
+```
+
+```bash
 npm -v
 ```
 
 ---
 
-# 16. Backend Setup
+# 19. Backend / API Setup
 
-Assume your project looks like:
+Assume your project looks like this:
 
 ```text
 /var/www/website/
@@ -626,7 +780,7 @@ Assume your project looks like:
 └── client/
 ```
 
-Go to backend:
+Go to the API:
 
 ```bash
 cd /var/www/website/api
@@ -635,20 +789,30 @@ cd /var/www/website/api
 Example:
 
 ```text
-Your backend files could be:
-
-/var/www/website/api/index.js
-/var/www/website/api/package.json
-/var/www/website/api/.env
+/var/www/website/api/
+├── index.js
+├── package.json
+├── package-lock.json
+└── .env
 ```
 
-Install dependencies:
+---
+
+# 20. Install Backend Dependencies
+
+If you have:
+
+```text
+package-lock.json
+```
+
+use:
 
 ```bash
 npm ci
 ```
 
-If you do not have `package-lock.json`:
+Otherwise:
 
 ```bash
 npm install
@@ -656,13 +820,15 @@ npm install
 
 ---
 
-# 17. Add Backend Environment Variables
+# 21. Create Backend Environment File
 
 Create:
 
 ```bash
 nano .env
 ```
+
+Paste your production environment variables.
 
 Example:
 
@@ -673,13 +839,13 @@ DATABASE_URL=your_database_url
 JWT_SECRET=your_secret
 ```
 
-The important example here is:
+Here:
 
 ```env
 PORT=8800
 ```
 
-So our API will be running at:
+means your Node.js API runs on:
 
 ```text
 http://127.0.0.1:8800
@@ -687,7 +853,7 @@ http://127.0.0.1:8800
 
 ---
 
-# 18. Test Backend
+# 22. Test Your API
 
 If your entry file is:
 
@@ -701,7 +867,13 @@ run:
 node index.js
 ```
 
-If your entry file is:
+Example output:
+
+```text
+Server running on port 8800
+```
+
+If your project uses:
 
 ```text
 src/server.js
@@ -713,25 +885,13 @@ run:
 node src/server.js
 ```
 
-You may see something like:
-
-```text
-Server running on port 8800
-```
-
-From another terminal, or after stopping it, you can test:
+Test the API:
 
 ```bash
 curl http://127.0.0.1:8800
 ```
 
-Example response:
-
-```text
-API is running
-```
-
-Stop the manually started server:
+Once you know it works, stop the manually running Node process:
 
 ```text
 CTRL + C
@@ -739,19 +899,19 @@ CTRL + C
 
 ---
 
-# 19. Install PM2
+# 23. Install PM2
 
-If you start your API with:
+If you run:
 
 ```bash
 node index.js
 ```
 
-the API will stop when you close SSH.
+and then close your SSH connection, the Node.js application will stop.
 
-PM2 keeps it running.
+PM2 keeps the application running.
 
-Install:
+Install PM2:
 
 ```bash
 npm install -g pm2
@@ -765,37 +925,27 @@ pm2 -v
 
 ---
 
-# 20. Start Backend with PM2
+# 24. Start API Using PM2
 
-If your backend starts with:
+If your entry file is:
 
 ```text
 index.js
 ```
 
-use:
+run:
 
 ```bash
 pm2 start index.js --name api
 ```
 
-Example:
-
-```text
-PM2 App Name:
-api
-
-Running File:
-index.js
-```
-
-If your backend starts from:
+If your entry file is:
 
 ```text
 src/server.js
 ```
 
-use:
+run:
 
 ```bash
 pm2 start src/server.js --name api
@@ -810,12 +960,18 @@ pm2 status
 Example:
 
 ```text
-api    online
+api       online
+```
+
+Check logs:
+
+```bash
+pm2 logs api
 ```
 
 ---
 
-# 21. Make PM2 Start After Server Reboot
+# 25. Make PM2 Start After VPS Reboot
 
 Run:
 
@@ -823,31 +979,29 @@ Run:
 pm2 startup
 ```
 
-PM2 will show you another command.
+PM2 will give you another command.
 
-For example, it may show something similar to:
+It may look similar to:
 
 ```bash
-sudo env PATH=$PATH:/root/.nvm/versions/node/v24.x.x/bin pm2 startup systemd -u root --hp /root
+sudo env PATH=$PATH:/root/.nvm/versions/node/... pm2 startup systemd -u root --hp /root
 ```
 
-**Do not blindly copy the example above.**
+Run the **exact command PM2 gives you**.
 
-Copy and run the exact command PM2 gives you.
-
-Then:
+Then save your running applications:
 
 ```bash
 pm2 save
 ```
 
-Now if the VPS restarts, PM2 can automatically restart your API.
+Now PM2 can restore your API after the server reboots.
 
 ---
 
-# 22. Useful PM2 Commands
+# 26. Useful PM2 Commands
 
-Check:
+Check running applications:
 
 ```bash
 pm2 status
@@ -859,42 +1013,270 @@ Restart API:
 pm2 restart api
 ```
 
-Logs:
-
-```bash
-pm2 logs api
-```
-
-Stop:
+Stop API:
 
 ```bash
 pm2 stop api
 ```
 
-Delete:
+Start API:
+
+```bash
+pm2 start api
+```
+
+Delete API:
 
 ```bash
 pm2 delete api
 ```
 
+View logs:
+
+```bash
+pm2 logs api
+```
+
+Clear logs:
+
+```bash
+pm2 flush
+```
+
 ---
 
-# 23. Nginx Configuration for API
+# 27. React + Vite Deployment
+
+This guide uses **Vite**.
+
+Assume your frontend is:
+
+```text
+/var/www/website/client
+```
+
+Go there:
+
+```bash
+cd /var/www/website/client
+```
+
+---
+
+# 28. Create Frontend Environment File
+
+```bash
+nano .env
+```
+
+Example:
+
+```env
+VITE_API_URL=https://api.example.com
+```
+
+Replace:
+
+```text
+api.example.com
+```
+
+with your real API domain.
+
+---
+
+# 29. Install Frontend Dependencies
+
+If you have `package-lock.json`:
+
+```bash
+npm ci
+```
+
+Otherwise:
+
+```bash
+npm install
+```
+
+---
+
+# 30. Build the Vite Application
+
+Run:
+
+```bash
+npm run build
+```
+
+Vite will normally create:
+
+```text
+dist
+```
+
+Example:
+
+```text
+/var/www/website/client/dist
+```
+
+Inside it:
+
+```text
+/var/www/website/client/dist/
+├── index.html
+└── assets/
+```
+
+This is the folder Nginx will serve.
+
+You do **not** need to copy the files somewhere else.
+
+---
+
+# 31. Configure Nginx for Your Domain
+
+Now we will replace the temporary IP-based Nginx configuration with the real domain configuration.
+
+Open:
+
+```bash
+nano /etc/nginx/sites-available/website
+```
 
 Assume:
 
 ```text
-Backend:
-Node.js
+Main Domain:
+example.com
 
-Backend Port:
+API:
+api.example.com
+
+Frontend:
+/var/www/website/client/dist
+
+API Port:
 8800
-
-Local Backend URL:
-http://127.0.0.1:8800
 ```
 
-Instead of using your public VPS IP like:
+Use:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com www.example.com;
+
+    location / {
+        root /var/www/website/client/dist;
+        index index.html index.htm;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8800;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+This is intentionally kept very close to the original configuration.
+
+---
+
+# 32. Understanding the Frontend Configuration
+
+This:
+
+```nginx
+server_name example.com www.example.com;
+```
+
+means this server block handles:
+
+```text
+http://example.com
+http://www.example.com
+```
+
+This:
+
+```nginx
+root /var/www/website/client/dist;
+```
+
+means the frontend is served from:
+
+```text
+/var/www/website/client/dist
+```
+
+which was created by:
+
+```bash
+npm run build
+```
+
+---
+
+# 33. Understanding the API Configuration
+
+This:
+
+```nginx
+server_name api.example.com;
+```
+
+means this block handles:
+
+```text
+http://api.example.com
+```
+
+This:
+
+```nginx
+proxy_pass http://127.0.0.1:8800;
+```
+
+means requests are forwarded to your Node.js API running on port:
+
+```text
+8800
+```
+
+For example:
+
+```text
+https://api.example.com/api/users
+```
+
+is sent to your backend running locally on the VPS.
+
+---
+
+# 34. Why We Use 127.0.0.1
+
+Instead of:
 
 ```nginx
 proxy_pass http://89.167.30.15:8800;
@@ -908,171 +1290,171 @@ proxy_pass http://127.0.0.1:8800;
 
 because Nginx and Node.js are running on the same VPS.
 
-Example configuration:
+There is no need for Nginx to connect back through the server's public IP.
+
+---
+
+# 35. Optional Admin Vite App
+
+If you also have a separate Vite admin application:
+
+```text
+/var/www/website/admin
+```
+
+and after building:
+
+```text
+/var/www/website/admin/dist
+```
+
+you can add:
 
 ```nginx
-location /api/ {
+server {
+    listen 80;
+    server_name admin.example.com;
 
-    # Our Node.js backend is running locally on port 8800.
-    proxy_pass http://127.0.0.1:8800/;
+    location / {
+        root /var/www/website/admin/dist;
+        index index.html index.htm;
 
-    proxy_http_version 1.1;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
 
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
+        try_files $uri $uri/ /index.html;
+    }
 }
 ```
 
-So:
-
-```text
-http://89.167.30.15/api/users
-```
-
-would be forwarded by Nginx to something like:
-
-```text
-http://127.0.0.1:8800/users
-```
+If you do not have an admin application, do not add this block.
 
 ---
 
-# 24. React / Vite Frontend
+# 36. Upload Size Limit
 
-Go to frontend:
-
-```bash
-cd /var/www/website/client
-```
-
-Example:
-
-```text
-/var/www/website/client/package.json
-/var/www/website/client/src/
-/var/www/website/client/.env
-```
-
-Create environment file:
-
-```bash
-nano .env
-```
-
-Example for Vite:
-
-```env
-VITE_API_URL=https://api.example.com
-```
-
-Install dependencies:
-
-```bash
-npm ci
-```
-
-If there is no `package-lock.json`:
-
-```bash
-npm install
-```
-
-Build:
-
-```bash
-npm run build
-```
-
----
-
-# 25. Vite Build Folder
-
-Vite normally generates:
-
-```text
-dist/
-```
-
-Example:
-
-```text
-/var/www/website/client/dist
-```
-
-Inside it:
-
-```text
-/var/www/website/client/dist/index.html
-/var/www/website/client/dist/assets/
-```
-
-Therefore our Nginx configuration will use:
+If your application accepts large uploads, add:
 
 ```nginx
-root /var/www/website/client/dist;
+client_max_body_size 1G;
 ```
 
----
-
-# 26. Create React App Build Folder
-
-Older React apps using Create React App normally generate:
-
-```text
-build/
-```
-
-Example:
-
-```text
-/var/www/website/client/build
-```
-
-Then use:
+Example API configuration:
 
 ```nginx
-root /var/www/website/client/build;
+server {
+    listen 80;
+    server_name api.example.com;
+
+    client_max_body_size 1G;
+
+    location / {
+        proxy_pass http://127.0.0.1:8800;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
 ```
 
-### Use only one
-
-For Vite:
+Change:
 
 ```text
-dist
+1G
 ```
 
-For Create React App:
-
-```text
-build
-```
+according to your application's requirements.
 
 ---
 
-# 27. Add Your Domain
+# 37. Test Nginx Configuration
 
-Assume:
+Every time you change Nginx:
+
+```bash
+nginx -t
+```
+
+If you see:
 
 ```text
-Server IP:
-89.167.30.15
+syntax is ok
+test is successful
+```
 
-Main Website:
-example.com
+reload:
 
-API:
+```bash
+systemctl reload nginx
+```
+
+You can also use:
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+This checks the configuration first and only reloads if the check succeeds.
+
+---
+
+# 38. 502 Bad Gateway
+
+If:
+
+```text
 api.example.com
 ```
 
-Create DNS records.
+returns:
+
+```text
+502 Bad Gateway
+```
+
+Nginx is normally unable to reach your Node.js API.
+
+Check PM2:
+
+```bash
+pm2 status
+```
+
+Check API logs:
+
+```bash
+pm2 logs api
+```
+
+Check the API directly:
+
+```bash
+curl http://127.0.0.1:8800
+```
+
+If this does not work, check your Node.js application.
+
+---
+
+# 39. Add Your Domain DNS
+
+Go to your domain provider.
+
+Assume your VPS IP is:
+
+```text
+89.167.30.15
+```
 
 ## Main Domain
+
+Create:
 
 ```text
 Type: A
@@ -1086,15 +1468,13 @@ This connects:
 example.com
 ```
 
-to:
-
-```text
-89.167.30.15
-```
+to your VPS.
 
 ---
 
 ## WWW
+
+Create:
 
 ```text
 Type: A
@@ -1114,6 +1494,8 @@ to your VPS.
 
 ## API
 
+Create:
+
 ```text
 Type: A
 Name: api
@@ -1130,221 +1512,47 @@ to your VPS.
 
 ---
 
-# 28. Final Nginx Configuration
+## Optional Admin
 
-Assume we have:
+If you have:
 
 ```text
-Server IP:
+admin.example.com
+```
+
+create:
+
+```text
+Type: A
+Name: admin
+Value: 89.167.30.15
+```
+
+---
+
+# 40. Check DNS
+
+You can check:
+
+```bash
+ping example.com
+```
+
+Or:
+
+```bash
+dig example.com +short
+```
+
+Example result:
+
+```text
 89.167.30.15
-
-Frontend:
-example.com
-
-Frontend Folder:
-/var/www/website/client/dist
-
-API:
-api.example.com
-
-Node API:
-127.0.0.1:8800
-```
-
-Open:
-
-```bash
-nano /etc/nginx/sites-available/website
-```
-
-Use:
-
-```nginx
-# ==============================
-# FRONTEND
-# ==============================
-
-server {
-    listen 80;
-
-    # Example:
-    # Main website: https://example.com
-    # WWW: https://www.example.com
-    server_name example.com www.example.com;
-
-    # Example Vite production build:
-    # /var/www/website/client/dist/index.html
-    root /var/www/website/client/dist;
-
-    index index.html;
-
-    # Example:
-    # Allows uploads up to 1 GB.
-    client_max_body_size 1G;
-
-    location / {
-
-        # Example:
-        # /dashboard
-        # /profile
-        # /settings
-        #
-        # If Nginx cannot find an actual file,
-        # it sends the request back to index.html
-        # so React Router can handle it.
-        try_files $uri $uri/ /index.html;
-    }
-}
-
-
-# ==============================
-# BACKEND API
-# ==============================
-
-server {
-    listen 80;
-
-    # Example:
-    # https://api.example.com
-    server_name api.example.com;
-
-    # Allows API uploads up to 1 GB.
-    client_max_body_size 1G;
-
-    location / {
-
-        # Example:
-        #
-        # Request:
-        # https://api.example.com/api/users
-        #
-        # Nginx forwards it to:
-        # http://127.0.0.1:8800/api/users
-        #
-        # Node.js is running locally on port 8800.
-        proxy_pass http://127.0.0.1:8800;
-
-        proxy_http_version 1.1;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-### Replace these:
-
-```text
-example.com
-www.example.com
-api.example.com
-```
-
-with your domains.
-
-For example, if your domain is:
-
-```text
-myapp.com
-```
-
-then it becomes:
-
-```nginx
-server_name myapp.com www.myapp.com;
-```
-
-and:
-
-```nginx
-server_name api.myapp.com;
 ```
 
 ---
 
-# 29. Test Nginx
-
-Every time you edit Nginx configuration, run:
-
-```bash
-nginx -t
-```
-
-If you see:
-
-```text
-syntax is ok
-test is successful
-```
-
-reload Nginx:
-
-```bash
-systemctl reload nginx
-```
-
-A useful one-line command is:
-
-```bash
-nginx -t && systemctl reload nginx
-```
-
-This only reloads Nginx if the configuration is valid.
-
----
-
-# 30. Understanding a 502 Error
-
-If you visit:
-
-```text
-https://api.example.com
-```
-
-and receive:
-
-```text
-502 Bad Gateway
-```
-
-it normally means:
-
-```text
-Nginx is working.
-
-BUT
-
-Nginx cannot connect to your Node.js application.
-```
-
-Check:
-
-```bash
-pm2 status
-```
-
-Then:
-
-```bash
-pm2 logs api
-```
-
-Also test:
-
-```bash
-curl http://127.0.0.1:8800
-```
-
-If this fails, the problem is most likely your Node.js application rather than Nginx.
-
----
-
-# 31. Install SSL
+# 41. SSL Certification
 
 Install Certbot:
 
@@ -1358,24 +1566,26 @@ Check firewall:
 ufw status
 ```
 
-You should see:
+Make sure:
 
 ```text
-Nginx Full    ALLOW
+Nginx Full
 ```
+
+is allowed.
 
 ---
 
-# 32. SSL for Main Website
+# 42. Install SSL for Website
 
-Example domain:
+For:
 
 ```text
 example.com
 www.example.com
 ```
 
-Run:
+run:
 
 ```bash
 certbot --nginx -d example.com -d www.example.com
@@ -1383,34 +1593,41 @@ certbot --nginx -d example.com -d www.example.com
 
 ---
 
-# 33. SSL for API
+# 43. Install SSL for API
 
-Example:
+For:
 
 ```text
 api.example.com
 ```
 
-Run:
+run:
 
 ```bash
 certbot --nginx -d api.example.com
 ```
 
-Or do everything together:
+---
+
+# 44. Install SSL Together
+
+You can also run:
 
 ```bash
-certbot --nginx \
--d example.com \
--d www.example.com \
--d api.example.com
+certbot --nginx -d example.com -d www.example.com -d api.example.com
 ```
 
-Only run Certbot after the DNS records are pointing to your VPS.
+If you also have admin:
+
+```bash
+certbot --nginx -d example.com -d www.example.com -d api.example.com -d admin.example.com
+```
+
+Only include domains that already point to the VPS.
 
 ---
 
-# 34. Test SSL Renewal
+# 45. Check Automatic SSL Renewal
 
 Check:
 
@@ -1418,7 +1635,7 @@ Check:
 systemctl status certbot.timer
 ```
 
-Test:
+Test renewal:
 
 ```bash
 certbot renew --dry-run
@@ -1426,62 +1643,59 @@ certbot renew --dry-run
 
 ---
 
-# 35. Private GitHub Repository
+# 46. Private GitHub Repository Setup
 
-If the repository is private, your VPS needs permission to pull it.
+If your repository is private, your VPS needs permission to pull it.
 
-A good approach is using a **GitHub Deploy Key**.
+The cleaner approach is to use a GitHub **Deploy Key**.
 
 ---
 
-# 36. Generate GitHub SSH Key on VPS
+# 47. Generate GitHub SSH Key on VPS
 
-Run on the VPS:
+On your VPS:
 
 ```bash
-ssh-keygen -t ed25519 -C "production-vps"
+ssh-keygen -t ed25519 -C "vps-deployment"
 ```
 
-Press `ENTER` for defaults.
+Press `ENTER` for the default location.
 
-Example:
+It will create:
 
 ```text
-Private:
 /root/.ssh/id_ed25519
-
-Public:
 /root/.ssh/id_ed25519.pub
 ```
 
 ---
 
-# 37. Copy VPS Public Key
+# 48. Get the VPS Public Key
 
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Example output:
+Copy the entire output.
+
+Example:
 
 ```text
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA.... production-vps
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... vps-deployment
 ```
-
-Copy the whole line.
 
 ---
 
-# 38. Add Deploy Key to GitHub
+# 49. Add Deploy Key to GitHub
 
-Go to:
+Go to your repository:
 
 ```text
 GitHub
-→ Your Repository
+→ Repository
 → Settings
-→ Deploy Keys
-→ Add Deploy Key
+→ Deploy keys
+→ Add deploy key
 ```
 
 Example title:
@@ -1492,13 +1706,7 @@ Production VPS
 
 Paste the public key.
 
-If the VPS only needs to:
-
-```text
-git pull
-```
-
-leave:
+If the VPS only needs to pull updates, leave:
 
 ```text
 Allow write access
@@ -1508,9 +1716,31 @@ disabled.
 
 ---
 
-# 39. Change Git Remote
+# 50. Test GitHub Connection
 
-Go to project:
+Run:
+
+```bash
+ssh -T git@github.com
+```
+
+The first time, you may be asked:
+
+```text
+Are you sure you want to continue connecting?
+```
+
+Enter:
+
+```text
+yes
+```
+
+---
+
+# 51. Change Existing Repository to SSH
+
+If you originally cloned using HTTPS:
 
 ```bash
 cd /var/www/website
@@ -1522,22 +1752,22 @@ Check:
 git remote -v
 ```
 
-You may currently have:
+You may see:
 
 ```text
-https://github.com/yourusername/my-project.git
+https://github.com/yourusername/project.git
 ```
 
 Change it:
 
 ```bash
-git remote set-url origin git@github.com:yourusername/my-project.git
+git remote set-url origin git@github.com:yourusername/project.git
 ```
 
 Example:
 
 ```bash
-git remote set-url origin git@github.com:furqanistic/xocial.git
+git remote set-url origin git@github.com:furqanistic/project-manara-AI.git
 ```
 
 Check again:
@@ -1548,37 +1778,13 @@ git remote -v
 
 ---
 
-# 40. Test GitHub SSH
+# 52. Normal Development Workflow
 
-```bash
-ssh -T git@github.com
-```
+## On Your MacBook
 
-The first time you may see:
+Make your changes.
 
-```text
-Are you sure you want to continue connecting?
-```
-
-Type:
-
-```text
-yes
-```
-
-Then pull:
-
-```bash
-git pull origin main
-```
-
----
-
-# 41. Normal Deployment Workflow
-
-After everything has been configured once, deployments become very simple.
-
-## On Your Mac
+Then:
 
 ```bash
 git add .
@@ -1594,11 +1800,21 @@ git push origin main
 
 ---
 
-## On VPS
+# 53. Pull Updates on VPS
+
+Connect to VPS:
+
+```bash
+ssh root@89.167.30.15
+```
+
+Go to project:
 
 ```bash
 cd /var/www/website
 ```
+
+Pull:
 
 ```bash
 git pull origin main
@@ -1606,33 +1822,37 @@ git pull origin main
 
 ---
 
-# 42. Backend Update
+# 54. Backend Update
+
+If backend code changed:
 
 ```bash
 cd /var/www/website/api
 ```
 
+Install dependencies:
+
 ```bash
 npm ci
 ```
+
+Restart:
 
 ```bash
 pm2 restart api
 ```
 
-Example:
+Check:
 
-```text
-Code pulled
-↓
-Dependencies installed
-↓
-API restarted
+```bash
+pm2 status
 ```
 
 ---
 
-# 43. Frontend Update
+# 55. Frontend Update
+
+If frontend code changed:
 
 ```bash
 cd /var/www/website/client
@@ -1644,217 +1864,25 @@ Install dependencies:
 npm ci
 ```
 
-Build:
+Build again:
 
 ```bash
 npm run build
 ```
 
-Example Vite output:
-
-```text
-/var/www/website/client/dist/
-```
-
-Because Nginx already points to:
+Vite will update:
 
 ```text
 /var/www/website/client/dist
 ```
 
-you don't need to copy the build anywhere else.
+Nginx is already serving that folder, so you do not need to copy anything.
 
 ---
 
-# 44. Useful Server Commands
+# 56. Full Normal Deployment
 
-## Check Disk
-
-```bash
-df -h
-```
-
-Example:
-
-```text
-Filesystem      Size  Used  Avail
-/dev/sda1       150G   25G   125G
-```
-
----
-
-## Check RAM
-
-```bash
-free -h
-```
-
----
-
-## Check CPU
-
-Install:
-
-```bash
-apt install htop -y
-```
-
-Run:
-
-```bash
-htop
-```
-
----
-
-## Check API
-
-```bash
-pm2 status
-```
-
----
-
-## API Logs
-
-```bash
-pm2 logs api
-```
-
----
-
-## Nginx Error Logs
-
-```bash
-tail -f /var/log/nginx/error.log
-```
-
----
-
-## Nginx Access Logs
-
-```bash
-tail -f /var/log/nginx/access.log
-```
-
----
-
-## Check Nginx
-
-```bash
-nginx -t
-```
-
----
-
-## Reload Nginx
-
-```bash
-nginx -t && systemctl reload nginx
-```
-
----
-
-## Check Firewall
-
-```bash
-ufw status
-```
-
----
-
-## Check Node
-
-```bash
-node -v
-```
-
----
-
-## Check npm
-
-```bash
-npm -v
-```
-
----
-
-## Restart VPS
-
-```bash
-reboot
-```
-
----
-
-# Final Server Structure
-
-A normal MERN/Vite project could look like:
-
-```text
-/var/www/website/
-│
-├── api/
-│   ├── index.js
-│   ├── package.json
-│   ├── package-lock.json
-│   └── .env
-│
-└── client/
-    ├── src/
-    ├── public/
-    ├── package.json
-    ├── package-lock.json
-    ├── .env
-    └── dist/
-```
-
----
-
-# How Everything Connects
-
-Example:
-
-```text
-User visits:
-
-https://example.com
-        │
-        ▼
-      Nginx
-        │
-        ▼
-/var/www/website/client/dist
-        │
-        ▼
-    React / Vite
-```
-
-API:
-
-```text
-Frontend sends request:
-
-https://api.example.com/api/users
-              │
-              ▼
-            Nginx
-              │
-              ▼
-    http://127.0.0.1:8800
-              │
-              ▼
-         Node.js API
-              │
-              ▼
-             PM2
-```
-
----
-
-# Quick Deployment Cheat Sheet
-
-After initial setup:
+After pushing your changes from your development machine:
 
 ```bash
 cd /var/www/website
@@ -1888,3 +1916,335 @@ nginx -t
 ```
 
 Done.
+
+---
+
+# 57. Useful Server Commands
+
+## Check Disk Space
+
+```bash
+df -h
+```
+
+---
+
+## Check RAM
+
+```bash
+free -h
+```
+
+---
+
+## Check CPU and Processes
+
+Install:
+
+```bash
+apt install htop -y
+```
+
+Run:
+
+```bash
+htop
+```
+
+Press:
+
+```text
+q
+```
+
+to exit.
+
+---
+
+## Check Node.js
+
+```bash
+node -v
+```
+
+---
+
+## Check npm
+
+```bash
+npm -v
+```
+
+---
+
+## Check NVM
+
+```bash
+nvm --version
+```
+
+---
+
+## Check PM2
+
+```bash
+pm2 status
+```
+
+---
+
+## Check API Logs
+
+```bash
+pm2 logs api
+```
+
+---
+
+## Check Nginx
+
+```bash
+systemctl status nginx
+```
+
+---
+
+## Check Nginx Configuration
+
+```bash
+nginx -t
+```
+
+---
+
+## Reload Nginx
+
+```bash
+systemctl reload nginx
+```
+
+---
+
+## Safely Test + Reload Nginx
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+---
+
+## Nginx Error Logs
+
+```bash
+tail -f /var/log/nginx/error.log
+```
+
+---
+
+## Nginx Access Logs
+
+```bash
+tail -f /var/log/nginx/access.log
+```
+
+---
+
+## Firewall Status
+
+```bash
+ufw status
+```
+
+---
+
+## See Failed System Services
+
+```bash
+systemctl --failed
+```
+
+If you already fixed the failed service and only need to clear its failed state:
+
+```bash
+systemctl reset-failed
+```
+
+---
+
+## Restart VPS
+
+```bash
+reboot
+```
+
+---
+
+# 58. Recommended Project Structure
+
+A normal Vite + Node.js application could look like:
+
+```text
+/var/www/website/
+│
+├── api/
+│   ├── index.js
+│   ├── package.json
+│   ├── package-lock.json
+│   └── .env
+│
+└── client/
+    ├── src/
+    ├── public/
+    ├── package.json
+    ├── package-lock.json
+    ├── .env
+    └── dist/
+```
+
+If you also have an admin app:
+
+```text
+/var/www/website/
+│
+├── api/
+│
+├── client/
+│   └── dist/
+│
+└── admin/
+    └── dist/
+```
+
+---
+
+# 59. How Everything Works
+
+Frontend:
+
+```text
+User
+ ↓
+https://example.com
+ ↓
+Nginx
+ ↓
+/var/www/website/client/dist
+ ↓
+Vite / React App
+```
+
+API:
+
+```text
+Frontend
+ ↓
+https://api.example.com
+ ↓
+Nginx
+ ↓
+http://127.0.0.1:8800
+ ↓
+Node.js API
+ ↓
+PM2
+```
+
+---
+
+# 60. Complete Setup Order
+
+Follow this order on a new VPS:
+
+```text
+1. Connect using SSH
+        ↓
+2. Update Ubuntu
+        ↓
+3. Remove Apache if installed
+        ↓
+4. Install Nginx
+        ↓
+5. Configure UFW
+        ↓
+6. Create /var/www/website temporarily
+        ↓
+7. Create test index.html
+        ↓
+8. Test using VPS IP
+        ↓
+9. DELETE /var/www/website
+        ↓
+10. Install Git
+        ↓
+11. Clone real GitHub project as /var/www/website
+        ↓
+12. Install NVM
+        ↓
+13. Install latest Node.js LTS
+        ↓
+14. Install backend dependencies
+        ↓
+15. Add backend .env
+        ↓
+16. Test backend
+        ↓
+17. Install PM2
+        ↓
+18. Run backend with PM2
+        ↓
+19. Configure PM2 startup
+        ↓
+20. Install frontend dependencies
+        ↓
+21. Add frontend .env
+        ↓
+22. npm run build
+        ↓
+23. Configure domains in Nginx
+        ↓
+24. Add DNS records
+        ↓
+25. nginx -t
+        ↓
+26. Reload Nginx
+        ↓
+27. Install SSL using Certbot
+        ↓
+28. Deployment complete
+```
+
+---
+
+# Quick Deployment Cheat Sheet
+
+Once the VPS has been configured, future updates are simple.
+
+```bash
+cd /var/www/website
+git pull origin main
+```
+
+Backend:
+
+```bash
+cd api
+npm ci
+pm2 restart api
+```
+
+Frontend:
+
+```bash
+cd ../client
+npm ci
+npm run build
+```
+
+Check everything:
+
+```bash
+pm2 status
+nginx -t
+```
+
+That's it.

@@ -125,7 +125,7 @@ apt install ufw -y
 
 ## Important — Allow SSH First
 
-Do this **before enabling UFW**:
+Do this before enabling UFW:
 
 ```bash
 ufw allow OpenSSH
@@ -149,7 +149,7 @@ Check:
 ufw status
 ```
 
-You should see something like:
+Example:
 
 ```text
 OpenSSH       ALLOW
@@ -212,7 +212,7 @@ Here:
 server_name _;
 ```
 
-allows you to test using the VPS IP.
+allows you to test the server using its IP.
 
 Example:
 
@@ -258,7 +258,7 @@ Visit:
 http://89.167.30.15
 ```
 
-If you see the message, Nginx is working correctly.
+If you see the message, Nginx is working.
 
 ---
 
@@ -300,17 +300,15 @@ git --version
 
 ### Skip this section if your repository is public.
 
-If your repository is **private**, configure GitHub SSH access before cloning it.
+If your repository is private, configure GitHub SSH access **before cloning it**.
 
 ## Generate SSH Key on VPS
-
-Run on the VPS:
 
 ```bash
 ssh-keygen -t ed25519 -C "vps-deployment"
 ```
 
-Press `ENTER` for all defaults.
+Press `ENTER` for the default location.
 
 This normally creates:
 
@@ -318,10 +316,6 @@ This normally creates:
 /root/.ssh/id_ed25519
 /root/.ssh/id_ed25519.pub
 ```
-
-The first is your private key.
-
-The `.pub` file is the public key that you give to GitHub.
 
 ---
 
@@ -331,7 +325,7 @@ The `.pub` file is the public key that you give to GitHub.
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Copy the complete output.
+Copy the full output.
 
 Example:
 
@@ -343,11 +337,11 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... vps-deployment
 
 ## Add Key to GitHub
 
-Open your private repository:
+Go to:
 
 ```text
 GitHub
-→ Repository
+→ Your Repository
 → Settings
 → Deploy Keys
 → Add Deploy Key
@@ -361,19 +355,23 @@ Production VPS
 
 Paste the public key.
 
-If the VPS only needs to pull code, **do not enable Allow write access**.
+If the VPS only needs to pull code, leave:
+
+```text
+Allow write access
+```
+
+disabled.
 
 ---
 
 ## Test GitHub SSH Connection
 
-Run:
-
 ```bash
 ssh -T git@github.com
 ```
 
-The first time GitHub may ask:
+The first time, GitHub may ask:
 
 ```text
 Are you sure you want to continue connecting?
@@ -385,13 +383,19 @@ Enter:
 yes
 ```
 
-Your VPS can now access the private repository.
-
 ---
 
-## GitHub SSH Repository URL
+## Get the SSH Repository URL
 
-Your repository SSH URL looks like:
+On GitHub:
+
+```text
+Repository
+→ Code
+→ SSH
+```
+
+The URL looks like:
 
 ```text
 git@github.com:USERNAME/REPOSITORY.git
@@ -400,28 +404,20 @@ git@github.com:USERNAME/REPOSITORY.git
 Example:
 
 ```text
-git@github.com:furqanistic/project-manara-AI.git
-```
-
-You can find it from:
-
-```text
-GitHub Repository
-→ Code
-→ SSH
+git@github.com:johndoe/my-app.git
 ```
 
 ---
 
 ## If Repository Is Already Cloned Using HTTPS
 
-Go inside the project:
+Go to your project:
 
 ```bash
 cd /var/www/website
 ```
 
-Check the current remote:
+Check current remote:
 
 ```bash
 git remote -v
@@ -430,13 +426,13 @@ git remote -v
 You may see:
 
 ```text
-origin  https://github.com/furqanistic/project-manara-AI.git
+origin  https://github.com/johndoe/my-app.git
 ```
 
 Change it to SSH:
 
 ```bash
-git remote set-url origin git@github.com:furqanistic/project-manara-AI.git
+git remote set-url origin git@github.com:johndoe/my-app.git
 ```
 
 Check again:
@@ -445,35 +441,35 @@ Check again:
 git remote -v
 ```
 
-Now you should see:
+You should now see:
 
 ```text
-origin  git@github.com:furqanistic/project-manara-AI.git
+origin  git@github.com:johndoe/my-app.git
 ```
 
-Now future commands like:
+Now:
 
 ```bash
 git pull origin main
 ```
 
-will use your SSH key.
+will use SSH authentication.
 
 ### Important
 
-If you clone the repository using its SSH URL from the beginning:
+If you clone the repository using SSH from the beginning:
 
 ```bash
-git clone git@github.com:furqanistic/project-manara-AI.git website
+git clone git@github.com:johndoe/my-app.git website
 ```
 
-you **do not need** to run:
+you do **not** need to run:
 
 ```bash
 git remote set-url origin ...
 ```
 
-because Git automatically sets the SSH remote correctly.
+because Git already sets the correct remote.
 
 ---
 
@@ -487,16 +483,16 @@ cd /var/www
 
 ## Public Repository
 
-You can use HTTPS:
+Use HTTPS:
 
 ```bash
-git clone https://github.com/yourusername/project.git website
+git clone https://github.com/USERNAME/REPOSITORY.git website
 ```
 
 Example:
 
 ```bash
-git clone https://github.com/furqanistic/project-manara-AI.git website
+git clone https://github.com/johndoe/my-app.git website
 ```
 
 ---
@@ -508,13 +504,13 @@ git clone https://github.com/furqanistic/project-manara-AI.git website
 Then clone using SSH:
 
 ```bash
-git clone git@github.com:yourusername/project.git website
+git clone git@github.com:USERNAME/REPOSITORY.git website
 ```
 
 Example:
 
 ```bash
-git clone git@github.com:furqanistic/project-manara-AI.git website
+git clone git@github.com:johndoe/my-app.git website
 ```
 
 This creates:
@@ -529,7 +525,7 @@ Go inside:
 cd /var/www/website
 ```
 
-Check:
+Check files:
 
 ```bash
 ls
@@ -541,10 +537,10 @@ Check Git remote:
 git remote -v
 ```
 
-For a private repository, it should look like:
+For a private repository it should look similar to:
 
 ```text
-origin  git@github.com:furqanistic/project-manara-AI.git
+origin  git@github.com:johndoe/my-app.git
 ```
 
 ---
@@ -557,9 +553,9 @@ Do not simply use:
 apt install nodejs
 ```
 
-because Ubuntu may install an older version.
+because Ubuntu may install an older Node.js version.
 
-Install `curl`:
+Install curl:
 
 ```bash
 apt install curl -y
@@ -583,7 +579,7 @@ Check:
 nvm --version
 ```
 
-Install the latest stable Node.js LTS:
+Install the latest stable LTS:
 
 ```bash
 nvm install --lts
@@ -605,13 +601,12 @@ Verify:
 
 ```bash
 node -v
-```
-
-```bash
 npm -v
 ```
 
-npm comes with Node.js, so you do not need:
+npm is already included with Node.js.
+
+You do not need:
 
 ```bash
 apt install npm
@@ -625,11 +620,18 @@ nvm use --lts
 nvm alias default 'lts/*'
 ```
 
+Then check:
+
+```bash
+node -v
+npm -v
+```
+
 ---
 
 # 14. Setup Backend
 
-Example backend:
+Example backend folder:
 
 ```text
 /var/www/website/api
@@ -668,19 +670,19 @@ DATABASE_URL=your_database_url
 JWT_SECRET=your_secret
 ```
 
-Test your API:
+Test API:
 
 ```bash
 node index.js
 ```
 
-Or if your entry file is:
+If your entry file is:
 
 ```text
 src/server.js
 ```
 
-run:
+use:
 
 ```bash
 node src/server.js
@@ -692,7 +694,7 @@ Test:
 curl http://127.0.0.1:8800
 ```
 
-Stop the manual process:
+Stop the manual Node process:
 
 ```text
 CTRL + C
@@ -702,13 +704,11 @@ CTRL + C
 
 # 15. Install PM2
 
-Install:
-
 ```bash
 npm install -g pm2
 ```
 
-If your entry file is:
+If the entry file is:
 
 ```text
 index.js
@@ -720,7 +720,7 @@ run:
 pm2 start index.js --name api
 ```
 
-If it is:
+If the entry file is:
 
 ```text
 src/server.js
@@ -824,7 +824,7 @@ This is the folder Nginx will serve.
 
 # 18. Add DNS Records
 
-Example server IP:
+Example VPS IP:
 
 ```text
 89.167.30.15
@@ -931,13 +931,13 @@ This:
 proxy_pass http://127.0.0.1:8800;
 ```
 
-sends API traffic to your Node.js application running on port `8800`.
+sends API traffic to Node.js running on port `8800`.
 
 ---
 
 # 20. Optional Upload Limit
 
-If your API accepts large uploads, add:
+If your API accepts large files, add:
 
 ```nginx
 client_max_body_size 1G;
@@ -1016,7 +1016,7 @@ certbot --nginx -d example.com -d www.example.com -d api.example.com
 
 Only run Certbot after your DNS records point to the VPS.
 
-Test automatic renewal:
+Test renewal:
 
 ```bash
 certbot renew --dry-run
@@ -1136,7 +1136,7 @@ Private repo?
 → Generate SSH key on VPS
 → Add Deploy Key to GitHub
 → Test GitHub SSH
-→ Use SSH repository URL
+→ Get SSH repo URL
 ↓
 Clone repo into /var/www/website
 ↓

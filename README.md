@@ -172,7 +172,7 @@ rm -f /etc/nginx/sites-available/default
 
 # 7. Test Nginx With Temporary Website
 
-Create:
+Create the temporary website folder:
 
 ```bash
 mkdir -p /var/www/website
@@ -206,13 +206,13 @@ server {
 }
 ```
 
-Here:
+This:
 
 ```nginx
 server_name _;
 ```
 
-allows you to test the server using its IP.
+allows you to test using your VPS IP.
 
 Example:
 
@@ -240,7 +240,9 @@ systemctl reload nginx
 
 ---
 
-# 8. Create Test Page
+# 8. Create Test HTML Page
+
+Create:
 
 ```bash
 nano /var/www/website/index.html
@@ -264,9 +266,15 @@ If you see the message, Nginx is working.
 
 # 9. Delete Temporary Website
 
-The `/var/www/website` folder was only created for testing.
+The HTML page and `/var/www/website` folder were only created for testing.
 
-Delete it before cloning your real project:
+First delete the temporary HTML:
+
+```bash
+rm -f /var/www/website/index.html
+```
+
+Then delete the temporary website folder:
 
 ```bash
 rm -rf /var/www/website
@@ -278,7 +286,13 @@ Check:
 ls /var/www
 ```
 
-`website` should no longer exist.
+You should no longer see:
+
+```text
+website
+```
+
+Now `/var/www/website` is free for your real project.
 
 ---
 
@@ -300,7 +314,7 @@ git --version
 
 ### Skip this section if your repository is public.
 
-If your repository is private, configure GitHub SSH access **before cloning it**.
+For a private repository, setup GitHub SSH access **before cloning**.
 
 ## Generate SSH Key on VPS
 
@@ -308,9 +322,9 @@ If your repository is private, configure GitHub SSH access **before cloning it**
 ssh-keygen -t ed25519 -C "vps-deployment"
 ```
 
-Press `ENTER` for the default location.
+Press `ENTER` for the defaults.
 
-This normally creates:
+This creates:
 
 ```text
 /root/.ssh/id_ed25519
@@ -319,13 +333,13 @@ This normally creates:
 
 ---
 
-## Copy VPS Public Key
+## Copy Public Key
 
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Copy the full output.
+Copy the complete output.
 
 Example:
 
@@ -365,19 +379,13 @@ disabled.
 
 ---
 
-## Test GitHub SSH Connection
+## Test GitHub SSH
 
 ```bash
 ssh -T git@github.com
 ```
 
-The first time, GitHub may ask:
-
-```text
-Are you sure you want to continue connecting?
-```
-
-Enter:
+The first time, enter:
 
 ```text
 yes
@@ -385,17 +393,17 @@ yes
 
 ---
 
-## Get the SSH Repository URL
+## Get SSH Repository URL
 
-On GitHub:
+Go to:
 
 ```text
-Repository
+GitHub Repository
 → Code
 → SSH
 ```
 
-The URL looks like:
+It looks like:
 
 ```text
 git@github.com:USERNAME/REPOSITORY.git
@@ -409,21 +417,21 @@ git@github.com:johndoe/my-app.git
 
 ---
 
-## If Repository Is Already Cloned Using HTTPS
+## If Repository Was Already Cloned Using HTTPS
 
-Go to your project:
+Go to the project:
 
 ```bash
 cd /var/www/website
 ```
 
-Check current remote:
+Check remote:
 
 ```bash
 git remote -v
 ```
 
-You may see:
+Example HTTPS remote:
 
 ```text
 origin  https://github.com/johndoe/my-app.git
@@ -447,29 +455,7 @@ You should now see:
 origin  git@github.com:johndoe/my-app.git
 ```
 
-Now:
-
-```bash
-git pull origin main
-```
-
-will use SSH authentication.
-
-### Important
-
-If you clone the repository using SSH from the beginning:
-
-```bash
-git clone git@github.com:johndoe/my-app.git website
-```
-
-you do **not** need to run:
-
-```bash
-git remote set-url origin ...
-```
-
-because Git already sets the correct remote.
+If you clone using SSH from the beginning, you do **not** need to change the remote manually.
 
 ---
 
@@ -483,8 +469,6 @@ cd /var/www
 
 ## Public Repository
 
-Use HTTPS:
-
 ```bash
 git clone https://github.com/USERNAME/REPOSITORY.git website
 ```
@@ -495,13 +479,11 @@ Example:
 git clone https://github.com/johndoe/my-app.git website
 ```
 
----
-
 ## Private Repository
 
-**First complete Step 11 — GitHub SSH Setup.**
+**Complete Step 11 first.**
 
-Then clone using SSH:
+Then:
 
 ```bash
 git clone git@github.com:USERNAME/REPOSITORY.git website
@@ -531,13 +513,13 @@ Check files:
 ls
 ```
 
-Check Git remote:
+Check remote:
 
 ```bash
 git remote -v
 ```
 
-For a private repository it should look similar to:
+For a private repository, it should look similar to:
 
 ```text
 origin  git@github.com:johndoe/my-app.git
@@ -553,7 +535,7 @@ Do not simply use:
 apt install nodejs
 ```
 
-because Ubuntu may install an older Node.js version.
+because Ubuntu may install an older version.
 
 Install curl:
 
@@ -579,7 +561,7 @@ Check:
 nvm --version
 ```
 
-Install the latest stable LTS:
+Install latest stable LTS:
 
 ```bash
 nvm install --lts
@@ -604,9 +586,7 @@ node -v
 npm -v
 ```
 
-npm is already included with Node.js.
-
-You do not need:
+npm comes with Node.js, so you do not need:
 
 ```bash
 apt install npm
@@ -620,7 +600,7 @@ nvm use --lts
 nvm alias default 'lts/*'
 ```
 
-Then check:
+Check:
 
 ```bash
 node -v
@@ -694,7 +674,7 @@ Test:
 curl http://127.0.0.1:8800
 ```
 
-Stop the manual Node process:
+Stop the manual process:
 
 ```text
 CTRL + C
@@ -708,7 +688,7 @@ CTRL + C
 npm install -g pm2
 ```
 
-If the entry file is:
+If your entry file is:
 
 ```text
 index.js
@@ -720,7 +700,7 @@ run:
 pm2 start index.js --name api
 ```
 
-If the entry file is:
+If your entry file is:
 
 ```text
 src/server.js
@@ -812,7 +792,7 @@ Build:
 npm run build
 ```
 
-Vite normally creates:
+Vite creates:
 
 ```text
 /var/www/website/client/dist
@@ -824,7 +804,7 @@ This is the folder Nginx will serve.
 
 # 18. Add DNS Records
 
-Example VPS IP:
+Example server IP:
 
 ```text
 89.167.30.15
@@ -931,7 +911,7 @@ This:
 proxy_pass http://127.0.0.1:8800;
 ```
 
-sends API traffic to Node.js running on port `8800`.
+sends API requests to Node.js running on port `8800`.
 
 ---
 
@@ -1124,9 +1104,13 @@ Install Nginx
 ↓
 Configure Firewall
 ↓
-Create temporary test website
+Create temporary /var/www/website
+↓
+Create temporary index.html
 ↓
 Test VPS IP
+↓
+DELETE index.html
 ↓
 DELETE /var/www/website
 ↓
@@ -1136,7 +1120,7 @@ Private repo?
 → Generate SSH key on VPS
 → Add Deploy Key to GitHub
 → Test GitHub SSH
-→ Get SSH repo URL
+→ Get SSH repository URL
 ↓
 Clone repo into /var/www/website
 ↓
